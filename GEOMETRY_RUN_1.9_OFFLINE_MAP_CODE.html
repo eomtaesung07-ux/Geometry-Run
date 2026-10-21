@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GEOMETRY RUN 1.8 - BALL + UFO MODE UPDATE</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b16;color:#fff;font-family:Arial,sans-serif}
+canvas{display:block;width:100%;height:100%}
+#lobby{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#111a34,#070a12);z-index:5}
+.waveHint{color:#65f3ff;font-weight:bold;margin-top:10px}
+h1{font-size:52px;letter-spacing:4px;margin:0 0 8px}.sub{opacity:.75;margin:0 0 25px}
+.levels{display:grid;grid-template-columns:repeat(4,100px);gap:12px}.levels button{height:76px;border:2px solid #5871ff;border-radius:12px;background:#151d38;color:white;font-size:20px;font-weight:bold;cursor:pointer}
+#hud{position:fixed;top:0;left:0;right:0;height:60px;display:none;align-items:center;padding:0 18px;z-index:3;pointer-events:none}
+#title{width:170px;font-weight:bold}#bar{height:12px;flex:1;background:#252a3b;border-radius:8px;overflow:hidden;margin:0 18px}#fill{height:100%;width:0;background:#5fe7ff}#percent{width:55px;text-align:right}
+#overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0009;z-index:4}.panel{background:#12192d;border:2px solid #5871ff;border-radius:18px;padding:28px 36px;text-align:center;min-width:300px}.panel h2{margin:0 0 10px;font-size:34px}.panel button{margin:8px 4px 0;padding:10px 18px;border:0;border-radius:9px;background:#5871ff;color:white;font-weight:bold}
+#shop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000b;z-index:8}.shopPanel{width:min(760px,92vw);max-height:86vh;overflow:auto;background:#10172a;border:2px solid #5871ff;border-radius:20px;padding:24px;text-align:center;box-shadow:0 20px 60px #0008}.shopHead{display:flex;justify-content:space-between;align-items:center;gap:12px}.shopHead h2{margin:0;font-size:30px}.gems{font-size:20px;font-weight:bold;color:#6fe8ff}.shopGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:18px}.item{background:#171f38;border:2px solid #34436f;border-radius:14px;padding:14px}.item.owned{border-color:#4fe39a}.iconPreview{width:72px;height:72px;margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:42px;border:3px solid #fff;box-shadow:0 5px 18px #0007}.itemName{font-weight:bold;font-size:18px}.itemPrice{margin:6px 0;color:#6fe8ff}.item button{width:100%;margin:4px 0 0}.shopClose{background:#303b61!important}.editorOpen{margin-top:12px;padding:12px 24px;border:0;border-radius:10px;background:#4fe3bd;color:#07121b;font-size:17px;font-weight:bold;cursor:pointer}.shopOpen{margin-top:16px;padding:12px 24px;border:0;border-radius:10px;background:#e6b84a;color:#111;font-size:17px;font-weight:bold;cursor:pointer}
+#musicBtn{position:fixed;right:15px;bottom:14px;z-index:6;display:none;padding:8px 12px;border:1px solid #65708d;border-radius:8px;background:#151a2b;color:#fff}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="lobby"><h1>GEOMETRY RUN</h1><div class="sub">SPACE / ↑ / 마우스 클릭으로 점프 · 1.9 MAP CODE SHARE</div><div class="waveHint">🌊 웨이브: 누르면 상승 · 놓으면 하강</div><div class="levels" id="levels"></div><button class="editorOpen" id="editorOpen">🛠️ 스테이지 에디터</button><button class="shopOpen" id="shopOpen">💎 아이콘 상점</button><button class="editorOpen" id="onlineOpen" style="background:#8b7bff;color:white">🌐 온라인 맵 코드</button></div>
+<div id="hud"><div id="title"></div><div id="bar"><div id="fill"></div></div><div id="percent">0%</div></div>
+<div id="overlay"><div class="panel"><h2 id="resultTitle"></h2><div id="resultText"></div><button id="retry">다시 하기</button><button id="back">스테이지 선택</button></div></div>
+<button id="musicBtn">♪ 음악 ON</button>
+<div id="editorPanel" style="display:none;position:fixed;inset:12px;z-index:9;background:#10172af5;border:2px solid #4fe3bd;border-radius:16px;padding:16px;color:white;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">🛠️ 스테이지 에디터</h2><div><button id="editorSave">저장</button> <button id="editorTest">테스트 플레이</button> <button id="editorClose">닫기</button></div></div><p style="margin:8px 0;color:#b9c8e8">도구를 선택한 뒤 아래 맵을 클릭해 배치하세요. 오브젝트를 드래그해 이동하고 선택 후 Delete로 삭제할 수 있어요.</p><div id="editorTools" style="display:flex;gap:7px;flex-wrap:wrap;margin:10px 0"></div><canvas id="editorCanvas" style="width:100%;height:min(55vh,420px);background:#080d19;border:1px solid #53658c;border-radius:10px;touch-action:none"></canvas><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="editorUndo">실행 취소</button><button id="editorClear">맵 비우기</button><span id="editorStatus" style="align-self:center;color:#9fe9ff"></span></div></div>
+<div id="shop"><div class="shopPanel"><div class="shopHead"><h2>💎 아이콘 상점</h2><div class="gems" id="gemCount">💎 0</div></div><div class="shopGrid" id="shopGrid"></div><button class="shopOpen shopClose" id="shopClose">닫기</button></div></div>
+
+<div id="onlinePanel" style="display:none;position:fixed;inset:0;z-index:12;background:#000c;align-items:center;justify-content:center;padding:16px;color:white">
+ <div style="width:min(680px,96vw);max-height:90vh;overflow:auto;background:#10172a;border:2px solid #8b7bff;border-radius:18px;padding:22px;box-shadow:0 20px 60px #0009">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="margin:0">🧩 맵 코드 공유 · 1.9</h2><button id="onlineClose">닫기</button></div>
+  <p style="color:#b9c8e8;line-height:1.6">Firebase나 계정 없이 사용할 수 있어요. 편집한 맵을 코드로 바꿔 복사한 뒤 친구에게 보내면 됩니다. 받은 코드를 아래에 붙여넣으면 맵이 에디터로 들어와요.</p>
+  <div style="padding:14px;background:#171f38;border:1px solid #34436f;border-radius:12px;margin:12px 0">
+   <h3 style="margin:0 0 8px">1. 내 맵 코드 만들기</h3>
+   <button id="makeMapCode" style="background:#8b7bff;color:white">현재 편집 맵에서 코드 만들기</button>
+   <p style="font-size:12px;color:#9aa9c8;line-height:1.5;margin-bottom:0">먼저 스테이지 에디터에서 맵을 만들고 저장해 주세요. 코드에는 맵 데이터가 들어가므로 맵이 복잡하면 코드가 길어질 수 있어요.</p>
+  </div>
+  <div style="padding:14px;background:#171f38;border:1px solid #34436f;border-radius:12px;margin:12px 0">
+   <h3 style="margin:0 0 8px">2. 코드 복사 / 받은 코드 붙여넣기</h3>
+   <textarea id="mapCodeText" rows="5" placeholder="여기에 생성된 맵 코드가 표시돼요. 친구에게 받은 코드도 여기에 붙여넣으세요." style="box-sizing:border-box;width:100%;resize:vertical;padding:11px;border-radius:8px;border:1px solid #53658c;background:#080d19;color:white;font:12px monospace;overflow-wrap:anywhere"></textarea>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button id="copyMapCode" style="background:#8b7bff;color:white">코드 복사</button><button id="importMapCode" style="background:#4fe3bd;color:#07121b">코드 불러오기 (에디터)</button><button id="playMapCode">불러온 맵 플레이</button></div>
+   <div id="onlineUploadResult" style="margin-top:10px;color:#9fe9ff;overflow-wrap:anywhere"></div>
+  </div>
+  <p style="font-size:12px;color:#9aa9c8;line-height:1.5">참고: 이 방식은 코드를 직접 전달하는 오프라인 공유예요. 짧은 코드 검색이나 공개 맵 목록은 아직 서버가 필요하므로, 나중에 온라인 서버를 연결할 수 있도록 코드 데이터 형식은 따로 유지합니다. 공식 스테이지는 덮어쓰지 않아요.</p>
+ </div>
+</div>
+
+<audio id="music" preload="metadata"></audio>
+<script>
+"use strict";
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+const lobby=document.getElementById("lobby"),levelsEl=document.getElementById("levels"),hud=document.getElementById("hud");
+const shop=document.getElementById("shop"),shopGrid=document.getElementById("shopGrid"),gemCount=document.getElementById("gemCount");
+const titleEl=document.getElementById("title"),fillEl=document.getElementById("fill"),percentEl=document.getElementById("percent");
+const overlay=document.getElementById("overlay"),resultTitle=document.getElementById("resultTitle"),resultText=document.getElementById("resultText");
+const music=document.getElementById("music"),musicBtn=document.getElementById("musicBtn");
+const editorPanel=document.getElementById("editorPanel"),editorCanvas=document.getElementById("editorCanvas"),ectx=editorCanvas.getContext("2d");
+let W,H,DPR,groundY,ceilingY;
+function saveProfile(){localStorage.setItem("gr_gems",String(gems));localStorage.setItem("gr_icon",selectedIcon);localStorage.setItem("gr_owned_icons",JSON.stringify(ownedIcons))}
+function renderShop(){
+ gemCount.textContent="💎 "+gems;
+ shopGrid.innerHTML="";
+ for(const it of ICONS){
+  const d=document.createElement("div");d.className="item"+(ownedIcons.includes(it.id)?" owned":"");
+  d.innerHTML=`<div class="iconPreview" style="background:${it.bg};border-color:${it.border};color:${it.face}">◆</div><div class="itemName">${it.name}</div><div class="itemPrice">${it.price?"💎 "+it.price:"기본"}</div>`;
+  const b=document.createElement("button");
+  if(selectedIcon===it.id){b.textContent="사용 중";b.disabled=true}
+  else if(ownedIcons.includes(it.id)){b.textContent="사용하기";b.onclick=()=>{selectedIcon=it.id;saveProfile();renderShop()}}
+  else {b.textContent="구매";b.onclick=()=>{if(gems>=it.price){gems-=it.price;ownedIcons.push(it.id);selectedIcon=it.id;saveProfile();renderShop()}else alert("보석이 부족해!")}}
+  d.appendChild(b);shopGrid.appendChild(d);
+ }
+}
+function openShop(){renderShop();shop.style.display="flex"}
+function closeShop(){shop.style.display="none"}
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(DPR,0,0,DPR,0,0);groundY=H-105;ceilingY=78}
+addEventListener("resize",resize);resize();
+
+const MAPS=[
+{name:"01 BASIC",music:"Coin Collectors.mp3",length:18500,objects:[
+["s",1100],["s",1450],["s",1800],["s",2140],["s",2480],["b",2850,170,55],["s",3110],["s",3152],["b",3500,190,75],["s",3780],["b",4150,150,110],["s",4390],["b",4740,220,60],["s",5050],["s",5092],["b",5450,170,90],["b",5700,170,130],["s",6030],["s",6072],["s",6114],["b",6500,260,60],["s",6840],["b",7200,170,100],["s",7460],["b",7850,220,70],["s",8170],["s",8212],["b",8600,190,120],["s",8880],["b",9300,260,60],["s",9640],["b",10000,180,90],["b",10240,180,120],["s",10520],["s",10850],["s",10892],["b",11250,250,70],["s",11600],["b",12000,180,110],["s",12300],["b",12700,300,60],["s",13100],["s",13142],["b",13500,180,100],["s",13800],["b",14200,240,70],["s",14540],["b",14900,190,130],["s",15200],["b",15600,260,60],["s",15950],["s",15992],["b",16400,180,100],["s",16700],["b",17100,260,70],["s",17480],["s",17820]]},
+{name:"02 TIMING",music:"Arcade Momentum.mp3",length:20500,objects:[
+["s",1000],["s",1042],["s",1084],["b",1400,140,65],["s",1620],["b",1940,180,95],["s",2200],["s",2242],["b",2580,240,60],["s",2920],["b",3250,150,120],["s",3480],["b",3800,260,70],["s",4140],["s",4182],["b",4500,170,135],["s",4780],["b",5150,320,55],["s",5550],["s",5790],["s",5832],["s",5874],["b",6250,180,100],["b",6480,180,140],["s",6780],["b",7100,300,60],["s",7500],["b",7820,150,125],["s",8060],["b",8400,230,80],["s",8720],["s",8762],["b",9100,170,145],["s",9360],["b",9700,300,55],["m",10080],["s",10100],["b",10400,170,110],["s",10680],["s",10950],["s",10992],["b",11300,250,70],["s",11620],["b",11950,170,130],["s",12220],["b",12550,270,65],["s",12920],["s",12962],["b",13300,170,120],["s",13580],["b",13900,300,60],["s",14300],["b",14600,190,145],["s",14900],["b",15300,250,70],["s",15620],["s",15662],["b",16000,170,120],["s",16280],["b",16600,300,65],["s",17000],["b",17350,170,140],["s",17620],["s",17900],["s",17942],["b",18300,260,60],["s",18700],["s",18742],["b",19100,190,100],["s",19400]]},
+{name:"03 ORB",music:"Cyber Jump.mp3",length:20500,objects:[
+["s",1050],["s",1400],["g",1820,300],["y",1920,95],["b",2220,240,70],["s",2550],["s",2920],["g",3300,300],["y",3400,100],["b",3700,260,80],["s",4050],["s",4400],["g",4780,320],["y",4890,100],["b",5200,280,70],["s",5550],["s",5900],["g",6280,300],["y",6390,100],["b",6700,260,90],["s",7050],["s",7400],["g",7780,330],["y",7890,105],["b",8220,300,70],["s",8600],["s",9000],["g",9380,300],["y",9490,100],["b",9820,280,80],["s",10200],["s",10600],["g",10980,320],["y",11090,100],["b",11420,300,70],["s",11800],["s",12200],["g",12580,300],["y",12690,100],["b",13020,280,90],["s",13400],["s",13800],["g",14180,320],["y",14290,100],["b",14620,300,70],["s",15000],["s",15400],["g",15780,300],["y",15890,100],["b",16220,280,80],["s",16600],["s",17000],["g",17380,320],["y",17490,100],["b",17820,300,70],["s",18200],["s",18600],["g",18980,300],["y",19090,100],["b",19420,300,80],["s",19800]]},
+{name:"04 GRAVITY",music:"Gravity Switch.mp3",length:22000,objects:[
+["s",1050],["s",1400],["u",1750,110],["s",2100],["c",2250,520,90],["c",2950,280,110],["s",3300],["s",3650],["u",3900,105],["s",4250],["c",4400,600,95],["c",5200,250,120],["s",5550],["s",5900],["u",6150,110],["s",6500],["c",6650,520,100],["c",7350,300,115],["s",7700],["s",8050],["u",8300,105],["s",8650],["c",8800,620,90],["c",9600,260,125],["s",9950],["s",10300],["u",10550,110],["s",10900],["c",11050,540,95],["c",11750,300,120],["s",12100],["s",12450],["u",12700,105],["s",13050],["c",13200,620,90],["c",14000,260,125],["s",14350],["s",14700],["u",14950,110],["s",15300],["c",15450,560,95],["c",16200,300,120],["s",16550],["s",16900],["u",17150,105],["s",17500],["c",17650,620,90],["c",18450,280,125],["s",18800],["s",19150],["u",19400,110],["s",19750],["c",19900,550,95],["c",20600,300,120],["s",21000]]},
+{name:"05 CEILING",music:"Cyber Grid.mp3",length:24500,objects:[
+["s",1100],["p",1750],["s",2230],["c",2600,260,80],["s",3000],["b",3350,260,110],["c",3800,300,90],["s",4250],["s",4292],["b",4650,180,140],["c",5000,250,80],["s",5450],["b",5800,300,70],["c",6250,360,100],["s",6750],["s",6792],["b",7200,190,125],["c",7600,280,90],["s",8050],["b",8500,300,60],["c",8950,320,110],["s",9450],["s",9492],["b",9900,220,135],["c",10300,250,80],["s",10750],["b",11200,320,65],["c",11700,360,100],["s",12200],["s",12242],["b",12700,190,145],["c",13100,300,90],["s",13600],["b",14050,300,70],["c",14500,350,110],["s",15000],["s",15042],["b",15500,210,125],["c",15900,260,80],["s",16400],["b",16900,320,65],["c",17400,360,100],["s",17900],["s",17942],["b",18400,190,145],["c",18800,300,90],["s",19300],["b",19750,300,70],["c",20200,350,110],["s",20700],["s",20742],["b",21200,210,125],["c",21600,260,80],["s",22100],["s",22142],["b",22600,320,65],["c",23100,360,100],["s",23600]]},
+{name:"06 BLACK ORB",music:"Obstacle Course.mp3",length:27000,objects:[
+["s",1100],["b",1500,220,70],["s",1830],["k",2200,95],["b",2550,300,60],["s",2950],["b",3300,190,120],["s",3600],["k",3950,100],["b",4300,280,70],["s",4680],["s",4950],["s",4992],["k",5350,100],["b",5700,320,65],["s",6120],["b",6450,180,135],["k",6850,100],["s",7200],["b",7550,300,60],["s",7950],["k",8300,100],["b",8650,220,100],["s",9000],["s",9250],["s",9292],["s",9334],["k",9700,100],["b",10050,320,65],["s",10470],["b",10800,190,130],["k",11200,100],["s",11550],["b",11900,280,70],["s",12280],["k",12600,100],["b",12950,300,60],["s",13350],["s",13600],["s",13642],["k",14000,100],["b",14350,200,120],["s",14680],["b",15000,320,65],["k",15400,100],["s",15800],["b",16150,220,100],["s",16500],["k",16900,100],["b",17250,300,60],["s",17650],["s",17900],["s",17942],["k",18300,100],["b",18650,190,135],["s",19000],["b",19350,300,65],["k",19750,100],["s",20150],["b",20500,230,100],["s",20850],["k",21200,100],["b",21550,320,60],["s",21950],["s",22200],["s",22242],["k",22600,100],["b",22950,200,120],["s",23300],["b",23650,300,65],["k",24050,100],["s",24450],["b",24800,220,100],["s",25200],["s",25242],["k",25600,100],["b",25950,300,60],["s",26350],["w",5200],]},
+{name:"07 SWITCH",music:"Gravity Shift.mp3",length:23500,objects:[
+["s",1050],["u",1650,110],["s",2000],["c",2150,500,90],["s",2750],["c",2950,300,120],["s",3350],["b",3700,220,70],["s",4050],["u",4300,105],["s",4650],["c",4800,600,90],["s",5500],["c",5700,280,130],["s",6100],["b",6450,260,80],["s",6850],["u",7100,110],["s",7450],["c",7600,520,95],["s",8250],["c",8450,350,120],["s",8850],["b",9200,280,70],["s",9600],["u",9850,105],["s",10200],["c",10350,620,90],["s",11100],["c",11300,260,130],["s",11700],["b",12050,300,80],["s",12450],["u",12700,110],["s",13050],["c",13200,550,95],["s",13900],["c",14100,320,120],["s",14500],["b",14850,260,70],["s",15250],["u",15500,105],["s",15850],["c",16000,620,90],["s",16750],["c",16950,280,130],["s",17350],["b",17700,300,80],["s",18100],["u",18350,110],["s",18700],["c",18850,560,95],["s",19550],["c",19750,300,120],["s",20150],["b",20500,280,70],["s",20900],["u",21150,105],["s",21500],["c",21650,620,90],["s",22350],["c",22550,280,130],["s",22900],["w",5600],]},
+{name:"08 GREEN RUSH",music:"",length:24000,objects:[
+["s",1050],["s",1400],["g",1800,300],["v",1920,105],["y",2160,130],["b",2450,220,70],["s",2800],["d",3150],["s",3500],["u",3900,110],["c",4100,500,90],["s",4700],["k",5000,100],["b",5300,250,70],["s",5650],["v",6000,105],["y",6250,125],["g",6500,340],["s",7000],["b",7300,260,80],["m",7700],["s",8000],["s",8350],["v",8750,110],["y",9000,130],["g",9250,380],["b",9750,300,75],["s",10200],["u",10600,105],["c",10800,560,95],["s",11450],["v",11800,110],["y",12050,125],["g",12300,360],["k",12750,105],["b",13100,260,80],["s",13500],["s",13850],["y",14200,105],["d",14550],["v",14900,105],["y",15150,130],["g",15400,400],["s",15900],["u",16300,110],["c",16500,520,90],["s",17100],["k",17400,105],["b",17750,280,75],["v",18200,110],["y",18450,130],["g",18700,380],["s",19200],["m",19600],["s",19900],["s",20250],["v",20650,110],["y",20900,130],["g",21150,400],["b",21650,300,80],["s",22100],["y",22450,105],["s",22700],["v",23050,110],["y",23300,130],["s",23600],["w",8000],]}
+,{name:"09 WAVE RUSH",music:"",length:19000,objects:[
+["w",850],["c",1450,260,220],["b",1850,250,210],["c",2250,300,260],["b",2700,300,250],["c",3150,220,210],["b",3500,260,230],["c",3900,300,280],["b",4350,260,250],["c",4750,220,210],["b",5100,280,260],["c",5550,300,230],["b",6000,220,220],["c",6350,280,270],["b",6800,300,250],["c",7250,240,220],["b",7650,280,260],["c",8100,300,250],["b",8550,220,210],["c",8900,260,260],["b",9300,300,230],["c",9750,240,220],["b",10150,280,270],["c",10600,300,250],["b",11050,230,210],["c",11400,260,260],["b",11800,300,240],["c",12250,240,220],["b",12650,280,270],["c",13100,300,250],["b",13550,230,210],["c",13900,260,260],["b",14300,300,240],["c",14750,240,220],["b",15150,280,270],["c",15600,300,250],["b",16050,230,210],["c",16400,260,260],["b",16800,300,240],["c",17250,240,220],["b",17650,280,270],["c",18100,300,250],["b",18550,230,210]]},
+{name:"10 SPEED MINI",music:"",length:28000,objects:[
+["t",900,2],["s",1400],["b",1750,190,75],["t",2350,3],
+["s",2850],["s",2892],["b",3250,230,70],["t",3900,4],
+["i",4500,1],["s",5000],["b",5350,240,95],["t",6100,2],
+["s",6600],["s",6642],["b",7000,220,80],["t",7700,1],
+["i",8200,0],["s",8650],["b",9000,260,80],["t",9700,0.5],
+["s",10300],["b",10700,250,90],["i",11350,1],["t",12000,2],
+["s",12500],["s",12542],["b",12900,260,75],["t",13600,3],
+["s",14100],["b",14500,230,90],["i",15100,0],["t",15800,4],
+["s",16300],["s",16342],["b",16700,250,70],["t",17400,1],
+["i",17900,1],["s",18400],["b",18800,260,90],["t",19500,0.5],
+["s",20100],["b",20500,240,80],["i",21100,0],["t",21800,2],
+["s",22300],["s",22342],["b",22700,260,75],["t",23400,3],
+["i",23900,1],["s",24400],["b",24800,260,90],["t",25500,4],
+["s",26000],["i",26500,0],["s",27000],["s",27400]
+]}
+,{name:"11 DUAL SHIFT",music:"",length:22500,objects:[
+["q",900],["s",1450],["b",1800,180,65],["S",2200],["s",2550],["b",2900,220,75],["S",3350],
+["s",3700],["s",3742],["b",4100,180,100],["S",4550],["b",4900,220,70],["s",5350],
+["S",5700],["s",6050],["b",6400,240,65],["S",6900],["s",7250],["b",7600,190,110],
+["S",8050],["s",8400],["s",8442],["b",8800,240,70],["S",9300],["s",9650],["b",10000,180,100],
+["S",10450],["s",10800],["b",11150,260,60],["S",11700],["s",12050],["s",12092],["b",12450,200,90],
+["S",12900],["b",13250,220,70],["s",13700],["S",14100],["s",14450],["b",14800,240,65],
+["S",15300],["s",15650],["b",16000,200,100],["S",16450],["s",16800],["s",16842],["b",17200,250,70],
+["S",17700],["s",18050],["b",18400,180,110],["S",18850],["s",19200],["b",19550,240,65],["S",20050],["s",20400],["b",20750,200,90],["S",21200],["s",21600]
+]},
+{name:"12 BALL CONTROL",music:"",length:17500,objects:[
+["B",800],["s",1350],["s",1750],["b",2100,220,65],["S",2550],["b",3000,200,70],["s",3450],["B",3900],["S",4400],["b",4750,230,75],["s",5200],["s",5550],["b",5900,250,65],["S",6350],["B",6800],["s",7300],["b",7650,200,90],["S",8100],["s",8550],["B",9000],["b",9500,260,70],["s",10000],["S",10400],["b",10800,230,80],["s",11250],["B",11700],["s",12200],["b",12600,260,65],["S",13050],["s",13500],["B",14000],["b",14500,220,75],["s",15000],["S",15400],["s",16000],["b",16400,220,70]]},
+{name:"13 UFO FLIGHT",music:"",length:18000,objects:[
+["U",800],["s",1300],["b",1650,200,70],["S",2050],["s",2450],["U",2850],["b",3300,230,70],["s",3750],["S",4150],["b",4550,220,80],["U",5000],["s",5500],["s",5850],["b",6200,260,70],["S",6650],["U",7100],["b",7600,220,80],["s",8050],["S",8450],["U",8900],["s",9400],["b",9800,240,70],["S",10250],["U",10700],["s",11200],["b",11600,220,80],["s",12050],["S",12450],["U",12900],["b",13400,260,70],["s",13900],["S",14300],["U",14800],["s",15300],["b",15700,230,75],["S",16150],["s",16600],["U",17000]]}
+];
+
+let stage=1,map=[],scroll=0,running=false,last=0,jumpHeld=false,musicOn=true,mode="cube",mirror=false,mirrorVisual=0,dualMode=false,waveTrail=[];
+let gems=Number(localStorage.getItem("gr_gems")||0);
+let selectedIcon=localStorage.getItem("gr_icon")||"default";
+let ownedIcons=JSON.parse(localStorage.getItem("gr_owned_icons")||'["default"]');
+const ICONS=[
+ {id:"default",name:"기본 아이콘",price:0,bg:"#62e6ff",border:"#e7fdff",face:"#0b1020"},
+ {id:"partition",name:"파티션 아이콘",price:200,bg:"#a66cff",border:"#f0e1ff",face:"#251044"},
+ {id:"neon",name:"네온 아이콘",price:400,bg:"#39ffb0",border:"#eafff7",face:"#05281d"},
+ {id:"fire",name:"파이어 아이콘",price:600,bg:"#ff704d",border:"#fff0e8",face:"#421207"},
+ {id:"void",name:"보이드 아이콘",price:800,bg:"#242b48",border:"#9caeff",face:"#dfe5ff"}
+];
+const SPEED=360,GRAVITY=1900,JUMP=680,BASE_SIZE=32,PLAYER_X=170;
+let playerSize=BASE_SIZE,speedMultiplier=1;
+const player={x:PLAYER_X,y:0,vy:0,gravity:1,grounded:true,rotation:0};
+const SHIP_THRUST=2350,SHIP_GRAVITY=1050,SHIP_MAX=760;
+
+function worldX(x){return PLAYER_X+(x-scroll)}
+function screenX(x){return PLAYER_X+(x-scroll)}
+function buildMap(){map=MAPS[stage-1].objects.map(o=>{
+  if(o[0]=="s")return{type:"spike",x:o[1],y:groundY-36,w:34,h:36,ceil:false};
+  if(o[0]=="S")return{type:"spike",x:o[1],y:ceilingY,w:34,h:36,ceil:true};
+  if(o[0]=="b")return{type:"block",x:o[1],y:groundY-o[3],w:o[2],h:o[3],ceil:false};
+  if(o[0]=="c")return{type:"block",x:o[1],y:ceilingY,w:o[2],h:o[3],ceil:true};
+  if(o[0]=="g")return{type:"gap",x:o[1],w:o[2]};
+  if(o[0]=="p")return{type:"portal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="w")return{type:"wavePortal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="m")return{type:"mirror",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="t")return{type:"speed",x:o[1],y:ceilingY,r:32,multiplier:o[2]};
+  if(o[0]=="i")return{type:"mini",x:o[1],y:ceilingY,r:32,small:!!o[2]};
+  if(o[0]=="q")return{type:"dualPortal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="r")return{type:"gravityPortal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="B")return{type:"ballPortal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="U")return{type:"ufoPortal",x:o[1],y:ceilingY,r:32};
+  if(o[0]=="y")return{type:"yellow",x:o[1],y:groundY-o[2],r:16,used:false};
+  if(o[0]=="u")return{type:"blue",x:o[1],y:groundY-o[2],r:16,used:false};
+  if(o[0]=="v")return{type:"green",x:o[1],y:groundY-o[2],r:16,used:false};
+  if(o[0]=="d")return{type:"pad",x:o[1],y:groundY-18,w:42,h:18,used:false};
+  return{type:"black",x:o[1],y:groundY-o[2],r:16,used:false};
+})}
+function reset(){scroll=0;mode="cube";mirror=false;mirrorVisual=0;dualMode=false;waveTrail=[];playerSize=BASE_SIZE;speedMultiplier=1;player.y=groundY-playerSize;player.vy=0;player.gravity=1;player.grounded=true;player.rotation=0;for(const o of map)if(o.used!==undefined)o.used=false}
+function start(){reset();running=true;lobby.style.display="none";overlay.style.display="none";hud.style.display="flex";musicBtn.style.display="block";titleEl.textContent=MAPS[stage-1].name;fillEl.style.width="0";percentEl.textContent="0%";if(MAPS[stage-1].music&&musicOn){music.src=MAPS[stage-1].music;music.currentTime=0;music.play().catch(()=>{})}else{music.pause()}last=performance.now();requestAnimationFrame(loop)}
+function die(){running=false;music.pause();resultTitle.textContent="GAME OVER";resultText.textContent=Math.floor(scroll/MAPS[stage-1].length*100)+"%";overlay.style.display="flex"}
+function clear(){
+ running=false;music.pause();gems+=200;saveProfile();
+ resultTitle.textContent="STAGE CLEAR!";resultText.innerHTML=MAPS[stage-1].name+" 클리어<br><span style='color:#6fe8ff;font-size:20px'>💎 +200 보석</span><br><span style='color:#aaa;font-size:14px'>현재 보석: "+gems+"</span>";overlay.style.display="flex"
+}
+function rect(){const inset=Math.max(2,playerSize*0.125);return{x:player.x+inset,y:player.y+inset,w:playerSize-inset*2,h:playerSize-inset*2}}
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+// Exact triangle/rectangle overlap prevents the mirror-flipped spike art and its hitbox from disagreeing.
+function pointInTriangle(p,a,b,c){const cross=(p1,p2,p3)=>(p1.x-p3.x)*(p2.y-p3.y)-(p2.x-p3.x)*(p1.y-p3.y);const d1=cross(p,a,b),d2=cross(p,b,c),d3=cross(p,c,a);return !((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0))}
+function segmentsCross(a,b,c,d){const orient=(p,q,r)=>Math.sign((q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x));return orient(a,b,c)!==orient(a,b,d)&&orient(c,d,a)!==orient(c,d,b)}
+function triangleRectHit(t, r){const corners=[{x:r.x,y:r.y},{x:r.x+r.w,y:r.y},{x:r.x+r.w,y:r.y+r.h},{x:r.x,y:r.y+r.h}];if(corners.some(p=>pointInTriangle(p,t[0],t[1],t[2])))return true;if(t.some(p=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h))return true;for(let i=0;i<3;i++)for(let j=0;j<4;j++)if(segmentsCross(t[i],t[(i+1)%3],corners[j],corners[(j+1)%4]))return true;return false}
+function orb(){
+ const px=player.x+playerSize/2,py=player.y+playerSize/2;
+ for(const o of map){if(o.used||!["yellow","blue","green","black"].includes(o.type))continue;const dx=px-worldX(o.x),dy=py-o.y;if(Math.hypot(dx,dy)<=58){
+   o.used=true;
+   if(o.type=="yellow")player.vy=-JUMP*1.08*player.gravity;
+   if(o.type=="green"){player.gravity*=-1;player.vy=0;player.grounded=false;if(player.gravity<0)player.y=ceilingY+2;}
+   if(o.type=="blue"){player.gravity*=-1;player.vy=JUMP*.48*player.gravity;player.grounded=false;if(player.gravity<0)player.y=ceilingY+2}
+   if(o.type=="black"){player.y=player.gravity>0?groundY-playerSize:ceilingY;player.vy=0;player.grounded=true}
+   return true;
+ }}return false
+}
+function jump(){if(!running)return;if(mode==="wave")return;if(orb())return;if(mode==="ball"){player.gravity*=-1;player.vy=120*player.gravity;player.grounded=false;return}if(mode==="ufo"){player.vy=-JUMP*.78*player.gravity;player.grounded=false;return}if(player.grounded){player.vy=-JUMP*player.gravity;player.grounded=false}}
+function update(dt){
+ scroll+=SPEED*speedMultiplier*dt;
+ // Smoothly animate the screen-wide mirror transition instead of flipping spike art only.
+ mirrorVisual += ((mirror ? 1 : 0) - mirrorVisual) * Math.min(1, dt * 5);
+ if (Math.abs((mirror ? 1 : 0) - mirrorVisual) < 0.002) mirrorVisual = mirror ? 1 : 0;
+ // Cube mode: keep the jump button held so a landing immediately triggers the next jump.
+ // This makes hold input work on cube sections too.
+ if(mode=="cube" && jumpHeld && player.grounded){jump();}
+ // Ship mode: hold = rise, release = fall, like Geometry Dash
+ for(const o of map){
+   if(o.type==="portal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;mode="ship";player.gravity=1;player.grounded=false;player.vy=jumpHeld?-220:180;}
+   if(o.type==="wavePortal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;mode="wave";player.gravity=1;player.grounded=false;player.vy=jumpHeld?-300:300;waveTrail=[];}
+   if(o.type=="mirror" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;mirror=!mirror;}
+   if(o.type==="speed" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;speedMultiplier=o.multiplier;}
+   if(o.type==="dualPortal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;dualMode=!dualMode;}
+   if(o.type==="gravityPortal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;player.gravity*=-1;player.vy=0;player.grounded=false;player.y=player.gravity<0?ceilingY+4:groundY-playerSize-4;}
+   if(o.type==="ballPortal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;mode="ball";player.grounded=false;player.vy=player.gravity*100;}
+   if(o.type==="ufoPortal" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;mode="ufo";player.grounded=false;player.vy=-JUMP*.65*player.gravity;}
+   if(o.type==="mini" && !o.used && Math.abs(worldX(o.x)-(player.x+playerSize/2))<24){o.used=true;playerSize=o.small?18:BASE_SIZE;if(player.gravity>0&&player.y+playerSize>groundY)player.y=groundY-playerSize;if(player.gravity<0&&player.y<ceilingY)player.y=ceilingY;}
+ }
+ // Jump pad: landing on it automatically launches the cube.
+ const pr0={x:player.x+4,y:player.y+4,w:playerSize-8,h:playerSize-8};
+ for(const o of map)if(o.type=="pad"&&!o.used&&player.gravity>0){const b={x:worldX(o.x),y:o.y,w:o.w,h:o.h};if(hit(pr0,b)&&player.vy>=0&&player.y+playerSize<=b.y+14){o.used=true;player.y=b.y-playerSize;player.vy=-JUMP*1.18;player.grounded=false;}}
+ const oldY=player.y,oldTop=oldY,oldBottom=oldY+playerSize,oldG=player.gravity;
+ if(mode==="wave"){
+   const waveSpeed=390; player.vy=(jumpHeld?-waveSpeed:waveSpeed); player.y+=player.vy*dt; player.grounded=false;
+   waveTrail.push({x:player.x+playerSize/2,y:player.y+playerSize/2,scroll}); if(waveTrail.length>70)waveTrail.shift();
+ }else if(mode==="ship"){
+   player.vy += (jumpHeld ? -SHIP_THRUST : SHIP_GRAVITY) * dt;
+   player.vy=Math.max(-SHIP_MAX,Math.min(SHIP_MAX,player.vy));
+   player.y += player.vy*dt;
+   player.grounded=false;
+ }else{
+   player.vy+=GRAVITY*player.gravity*dt;player.y+=player.vy*dt;player.grounded=false;
+ }
+ let overGap=false;
+ if(mode==="ship"||mode==="wave"){
+   if(player.y<=ceilingY || player.y+playerSize>=groundY){die();return;}
+ }
+ if(mode!="ship" && player.gravity>0){for(const o of map)if(o.type=="gap"&&scroll+playerSize*.72>o.x&&scroll+playerSize*.28<o.x+o.w){overGap=true;break}if(!overGap&&player.y+playerSize>=groundY){player.y=groundY-playerSize;player.vy=0;player.grounded=true}}
+ else if(player.y<=ceilingY){player.y=ceilingY;player.vy=0;player.grounded=true}
+ // UFO must never pass through the ceiling while normal gravity is active.
+ if(mode==="ufo" && player.y<=ceilingY){player.y=ceilingY;player.vy=0;player.grounded=true}
+ const pr=rect();
+ if(mode==="ship"||mode==="wave"){
+   for(const o of map)if(o.type==="block"){const b={x:worldX(o.x),y:o.ceil?ceilingY:o.y,w:o.w,h:o.h};if(hit(pr,b)){die();return;}}
+ }
+ for(const o of map)if(o.type=="block" && mode!="ship"){
+   const b={x:worldX(o.x),y:o.ceil?ceilingY:o.y,w:o.w,h:o.h};
+   if(!hit(pr,b))continue;
+   if(!o.ceil&&oldG>0&&player.vy>0&&oldBottom<=b.y+6){player.y=b.y-playerSize;player.vy=0;player.grounded=true;continue}
+   if(o.ceil&&oldG<0&&player.vy<0&&oldTop>=b.y+b.h-6){player.y=b.y+b.h;player.vy=0;player.grounded=true;continue}
+   die();return
+ }
+ const sr={x:pr.x+5,y:pr.y+5,w:pr.w-10,h:pr.h-10};
+ for(const o of map)if(o.type=="spike"){
+   const x=worldX(o.x),y=o.ceil?ceilingY:o.y;
+   // Keep collision vertices identical to the triangle drawn in draw(), including mirror inversion.
+   const tri=o.ceil?[{x,y},{x:x+o.w/2,y:y+o.h},{x:x+o.w,y}]:[{x,y:y+o.h},{x:x+o.w/2,y},{x:x+o.w,y:y+o.h}];
+   if(triangleRectHit(tri,sr)){die();return}
+ }
+ // Dual mode: the second cube mirrors the main cube vertically and shares the same input.
+ // It has its own collision check against blocks and both floor/ceiling spikes.
+ if(dualMode){
+   const y2=groundY+ceilingY-player.y-playerSize;
+   const r2={x:player.x+Math.max(2,playerSize*.125),y:y2+Math.max(2,playerSize*.125),w:playerSize-Math.max(2,playerSize*.125)*2,h:playerSize-Math.max(2,playerSize*.125)*2};
+   for(const o of map){
+     if(o.type==="block"){const b={x:worldX(o.x),y:o.ceil?ceilingY:o.y,w:o.w,h:o.h};if(hit(r2,b)){die();return}}
+     if(o.type==="spike"){const x=worldX(o.x),y=o.ceil?ceilingY:o.y;const tri=o.ceil?[{x,y},{x:x+o.w/2,y:y+o.h},{x:x+o.w,y}]:[{x,y:y+o.h},{x:x+o.w/2,y},{x:x+o.w,y:y+o.h}];if(triangleRectHit(tri,r2)){die();return}}
+   }
+ }
+ if(mode!="ship" && mode!="wave" && player.gravity>0&&player.y>H+80){die();return}
+ player.rotation+=dt*(mode=="ship"?player.vy*0.003:5.5*player.gravity);
+ if(scroll>=MAPS[stage-1].length){clear();return}
+ const p=Math.min(100,Math.floor(scroll/MAPS[stage-1].length*100));fillEl.style.width=p+"%";percentEl.textContent=p+"%";titleEl.textContent=MAPS[stage-1].name+" · "+speedMultiplier+"x"+(playerSize<BASE_SIZE?" · MINI":"")+(dualMode?" · DUAL":"")
+}
+function draw(){
+ ctx.save();
+ const flipScale=Math.cos(Math.PI*mirrorVisual);
+ ctx.translate(W/2,0);ctx.scale(flipScale,1);ctx.translate(-W/2,0);
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#111a36");g.addColorStop(1,"#070a12");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.globalAlpha=.15;ctx.strokeStyle="#7385ff";for(let x=-(scroll%80);x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=ceilingY;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.globalAlpha=1;
+ ctx.fillStyle="#121d32";ctx.fillRect(0,groundY,W,H-groundY);ctx.fillStyle="#293b61";ctx.fillRect(0,groundY-4,W,4);ctx.fillRect(0,ceilingY,W,4);ctx.fillStyle="#5fe7ff";ctx.globalAlpha=.7;ctx.fillRect(0,groundY-2,W,2);ctx.fillRect(0,ceilingY+2,W,2);ctx.globalAlpha=1;
+ // Small parallax diamonds refresh the background without changing gameplay geometry.
+ for(let i=0;i<18;i++){const sx=((i*137-scroll*.18)%(W+40)+W+40)%(W+40)-20;const sy=105+((i*83)%Math.max(100,groundY-150));ctx.fillStyle=i%3===0?"#ffb84d":"#7b8cff";ctx.globalAlpha=.28;ctx.fillRect(sx,sy,3,3)}ctx.globalAlpha=1;
+ for(const o of map){const x=screenX(o.x);if(o.type=="gap"){ctx.fillStyle="#05070d";ctx.fillRect(x,groundY,o.w,H-groundY)}
+ else if(o.type=="block"){const by=o.ceil?ceilingY:o.y;ctx.save();ctx.shadowColor="#24eaff";ctx.shadowBlur=10;ctx.fillStyle="#102e50";ctx.fillRect(x,by,o.w,o.h);ctx.shadowBlur=0;ctx.fillStyle="#155b83";ctx.fillRect(x+3,by+3,Math.max(0,o.w-6),Math.max(0,o.h-6));ctx.fillStyle="#35dfff";ctx.fillRect(x+5,by+5,Math.max(0,o.w-10),3);ctx.strokeStyle="#a5f7ff";ctx.lineWidth=2;ctx.strokeRect(x+1,by+1,o.w-2,o.h-2);ctx.strokeStyle="#39c9f2";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+5,by+Math.min(16,o.h-4));ctx.lineTo(x+Math.min(17,o.w-4),by+5);ctx.lineTo(x+Math.max(5,o.w-17),by+5);ctx.moveTo(x+o.w-5,by+Math.min(16,o.h-4));ctx.lineTo(x+o.w-5,by+o.h-5);ctx.lineTo(x+Math.max(5,o.w-17),by+o.h-5);ctx.stroke();if(o.w>36&&o.h>26){ctx.fillStyle="#a5f7ff";ctx.fillRect(x+8,by+11,Math.min(8,o.w-16),3);ctx.fillRect(x+8,by+17,Math.min(14,o.w-16),2)}ctx.restore()}
+ else if(o.type=="portal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=5;ctx.strokeStyle="#ff4fd8";ctx.shadowBlur=18;ctx.shadowColor="#ff4fd8";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),28,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(x-10,groundY-((groundY-ceilingY)/2)+16);ctx.lineTo(x,groundY-((groundY-ceilingY)/2)-16);ctx.lineTo(x+10,groundY-((groundY-ceilingY)/2)+16);ctx.stroke();ctx.restore()}
+ else if(o.type==="wavePortal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=6;ctx.strokeStyle="#58f6ff";ctx.shadowBlur=20;ctx.shadowColor="#58f6ff";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),28,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle="#58f6ff";ctx.font="bold 14px Arial";ctx.textAlign="center";ctx.fillText("WAVE",x,ceilingY+22);ctx.restore()}
+ else if(o.type==="speed"){if(x<-80||x>W+80)continue;ctx.save();const colors={0.5:"#a9b5ff",1:"#78e0a3",2:"#ffd84d",3:"#ff9d4d",4:"#ff5272"};ctx.lineWidth=5;ctx.strokeStyle=colors[o.multiplier]||"#fff";ctx.shadowBlur=18;ctx.shadowColor=ctx.strokeStyle;ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),25,((groundY-ceilingY)/2)-20,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText(o.multiplier+"x",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="mini"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=5;ctx.strokeStyle=o.small?"#ff7de1":"#6ff6ff";ctx.shadowBlur=18;ctx.shadowColor=ctx.strokeStyle;ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),25,((groundY-ceilingY)/2)-20,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(o.small?"MINI":"NORMAL",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="gravityPortal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=6;ctx.strokeStyle="#a66cff";ctx.shadowBlur=20;ctx.shadowColor="#a66cff";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),29,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText("GRAVITY",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="ufoPortal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=6;ctx.strokeStyle="#a9ff55";ctx.shadowBlur=22;ctx.shadowColor="#a9ff55";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),29,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#f4ffd9";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("UFO",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="ballPortal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=6;ctx.strokeStyle="#4beaff";ctx.shadowBlur=22;ctx.shadowColor="#4beaff";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),29,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#eaffff";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("BALL",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="dualPortal"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=6;ctx.strokeStyle="#ffb84d";ctx.shadowBlur=22;ctx.shadowColor="#ff9b35";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),29,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle="#fff1c7";ctx.font="bold 13px Arial";ctx.textAlign="center";ctx.fillText("DUAL",x,groundY-((groundY-ceilingY)/2)+5);ctx.restore()}
+ else if(o.type==="mirror"){if(x<-80||x>W+80)continue;ctx.save();ctx.lineWidth=5;ctx.strokeStyle="#6ff6ff";ctx.shadowBlur=18;ctx.shadowColor="#6ff6ff";ctx.beginPath();ctx.ellipse(x,groundY-((groundY-ceilingY)/2),28,((groundY-ceilingY)/2)-18,0,0,Math.PI*2);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(x-13,groundY-((groundY-ceilingY)/2)-12);ctx.lineTo(x+13,groundY-((groundY-ceilingY)/2)+12);ctx.moveTo(x+13,groundY-((groundY-ceilingY)/2)-12);ctx.lineTo(x-13,groundY-((groundY-ceilingY)/2)+12);ctx.stroke();ctx.restore()}
+ else if(o.type=="pad"){if(x<-80||x>W+80)continue;ctx.save();ctx.fillStyle=o.used?"#8a6b32":"#ffd84d";ctx.fillRect(x,o.y,o.w,o.h);ctx.strokeStyle="#fff3a6";ctx.lineWidth=3;ctx.strokeRect(x+1,o.y+1,o.w-2,o.h-2);ctx.fillStyle="#fff";ctx.beginPath();ctx.moveTo(x+10,o.y+13);ctx.lineTo(x+21,o.y+5);ctx.lineTo(x+32,o.y+13);ctx.stroke();ctx.restore()}
+ else if(o.type=="spike"){const y=o.ceil?ceilingY:o.y;ctx.save();ctx.shadowColor="#ff3ec9";ctx.shadowBlur=13;ctx.fillStyle="#17334f";ctx.beginPath();if(o.ceil){ctx.moveTo(x,y);ctx.lineTo(x+o.w/2,y+o.h);ctx.lineTo(x+o.w,y)}else{ctx.moveTo(x,y+o.h);ctx.lineTo(x+o.w/2,y);ctx.lineTo(x+o.w,y+o.h)}ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.fillStyle="#146d91";ctx.beginPath();if(o.ceil){ctx.moveTo(x+4,y+2);ctx.lineTo(x+o.w/2,y+o.h-7);ctx.lineTo(x+o.w-4,y+2)}else{ctx.moveTo(x+4,y+o.h-2);ctx.lineTo(x+o.w/2,y+7);ctx.lineTo(x+o.w-4,y+o.h-2)}ctx.closePath();ctx.fill();ctx.strokeStyle="#ff79e5";ctx.lineWidth=2.5;ctx.beginPath();if(o.ceil){ctx.moveTo(x,y);ctx.lineTo(x+o.w/2,y+o.h);ctx.lineTo(x+o.w,y)}else{ctx.moveTo(x,y+o.h);ctx.lineTo(x+o.w/2,y);ctx.lineTo(x+o.w,y+o.h)}ctx.stroke();ctx.restore()}
+ else {if(x<-80||x>W+80)continue;ctx.save();ctx.globalAlpha=o.used?.25:1;ctx.lineWidth=4;ctx.strokeStyle=o.type=="yellow"?"#ffe44f":o.type=="blue"?"#55a8ff":o.type=="green"?"#53e879":"#bd8cff";ctx.beginPath();ctx.arc(x,o.y,21,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(x,o.y,12,0,Math.PI*2);ctx.stroke();ctx.restore()}}
+ if(waveTrail.length>1){ctx.save();ctx.strokeStyle="#63f5ff";ctx.lineWidth=4;ctx.shadowBlur=12;ctx.shadowColor="#63f5ff";ctx.beginPath();waveTrail.forEach((p,i)=>{const tx=player.x+playerSize/2-(scroll-p.scroll); if(i===0)ctx.moveTo(tx,p.y);else ctx.lineTo(tx,p.y)});ctx.stroke();ctx.restore()}
+ const fx=screenX(MAPS[stage-1].length);if(fx>-50&&fx<W+50){ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(fx,ceilingY);ctx.lineTo(fx,groundY);ctx.stroke()}
+ ctx.save();ctx.translate(player.x+playerSize/2,player.y+playerSize/2);ctx.rotate(player.rotation);const ic=ICONS.find(x=>x.id===selectedIcon)||ICONS[0];ctx.fillStyle=mode==="ship"?"#ff6be5":mode==="wave"?"#58f6ff":mode==="ball"?"#4beaff":mode==="ufo"?"#a9ff55":ic.bg;ctx.strokeStyle=(mode==="ship"||mode==="wave"||mode==="ball"||mode==="ufo")?"#f4ffd9":ic.border;ctx.lineWidth=Math.max(1,playerSize*.09);if(mode==="ufo"){ctx.shadowColor="#a9ff55";ctx.shadowBlur=14;ctx.beginPath();ctx.ellipse(0,0,playerSize*.48,playerSize*.30,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(0,-playerSize*.20,playerSize*.23,playerSize*.18,0,Math.PI,Math.PI*2);ctx.fillStyle="#eaffb8";ctx.fill();ctx.shadowBlur=0;ctx.stroke()}else if(mode==="ball"){ctx.shadowColor="#4beaff";ctx.shadowBlur=14;ctx.beginPath();ctx.arc(0,0,playerSize*.48,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.stroke();ctx.beginPath();ctx.arc(0,0,playerSize*.25,0,Math.PI*1.55);ctx.stroke();ctx.beginPath();ctx.arc(0,0,playerSize*.12,Math.PI,Math.PI*2);ctx.stroke()}else{ctx.fillRect(-playerSize/2,-playerSize/2,playerSize,playerSize);ctx.strokeRect(-playerSize*.44,-playerSize*.44,playerSize*.88,playerSize*.88);ctx.fillStyle=ic.face;ctx.fillRect(-playerSize*.22,-playerSize*.22,playerSize*.16,playerSize*.16);ctx.fillRect(playerSize*.06,-playerSize*.22,playerSize*.16,playerSize*.16)}ctx.restore();
+ if(dualMode){const y2=groundY+ceilingY-player.y-playerSize;ctx.save();ctx.translate(player.x+playerSize/2,y2+playerSize/2);ctx.rotate(-player.rotation);ctx.fillStyle="#ffb84d";ctx.fillRect(-playerSize/2,-playerSize/2,playerSize,playerSize);ctx.strokeStyle="#fff1c7";ctx.lineWidth=Math.max(1,playerSize*.09);ctx.strokeRect(-playerSize*.44,-playerSize*.44,playerSize*.88,playerSize*.88);ctx.fillStyle="#572d00";ctx.fillRect(-playerSize*.22,-playerSize*.22,playerSize*.16,playerSize*.16);ctx.fillRect(playerSize*.06,-playerSize*.22,playerSize*.16,playerSize*.16);ctx.restore();}
+ ctx.restore();
+}
+// Advanced map editor (custom maps are saved separately from the original campaign).
+let editorObjects=JSON.parse(localStorage.getItem("gr_custom_map")||'[["b",500,140,60],["s",800],["r",1100],["q",1450]]');
+let editorTool="b",editorSelected=-1,editorDrag=null,editorHistory=[];const EDITOR_LENGTH=7000;
+const editorToolDefs=[{id:"b",label:"▦ 블럭"},{id:"B",label:"🔵 볼 포탈"},{id:"U",label:"🟢 UFO 포탈"},{id:"s",label:"▲ 바닥 가시"},{id:"S",label:"▼ 천장 가시"},{id:"r",label:"🟣 중력 포탈"},{id:"q",label:"🟠 듀얼 포탈"},{id:"t",label:"⚡ 속도 포탈"},{id:"i",label:"◉ 미니 포탈"},{id:"p",label:"🚀 배/쉽 포탈"},{id:"w",label:"〰 웨이브 포탈"}];
+function editorSnapshot(){editorHistory.push(JSON.stringify(editorObjects));if(editorHistory.length>40)editorHistory.shift()}
+function editorInit(){const tools=document.getElementById("editorTools");tools.innerHTML="";editorToolDefs.forEach(t=>{const b=document.createElement("button");b.textContent=t.label;b.style.cssText="padding:8px 11px;border:1px solid #52658b;border-radius:8px;background:"+(editorTool===t.id?"#4fe3bd":"#202b43")+";color:"+(editorTool===t.id?"#08121b":"white")+";font-weight:bold;cursor:pointer";b.onclick=()=>{editorTool=t.id;editorInit()};tools.appendChild(b)});editorDraw()}
+function editorOpen(){running=false;music.pause();lobby.style.display="none";overlay.style.display="none";hud.style.display="none";musicBtn.style.display="none";editorPanel.style.display="block";editorResize();editorInit()}
+function editorResize(){const r=editorCanvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);editorCanvas.width=Math.max(1,r.width*d);editorCanvas.height=Math.max(1,r.height*d);ectx.setTransform(d,0,0,d,0,0);editorDraw()}
+function editorDraw(){if(!editorCanvas.width)return;const r=editorCanvas.getBoundingClientRect(),w=r.width,h=r.height;ectx.clearRect(0,0,w,h);ectx.fillStyle="#080d19";ectx.fillRect(0,0,w,h);const scale=w/EDITOR_LENGTH;for(let x=0;x<w;x+=32){ectx.strokeStyle="#202d45";ectx.beginPath();ectx.moveTo(x,0);ectx.lineTo(x,h);ectx.stroke()}for(let y=0;y<h;y+=24){ectx.beginPath();ectx.moveTo(0,y);ectx.lineTo(w,y);ectx.stroke()}const gy=h-35,cy=22;ectx.fillStyle="#20314d";ectx.fillRect(0,gy,w,35);ectx.fillRect(0,cy,w,4);editorObjects.forEach((o,i)=>{const x=o[1]*scale;let y=gy-30,ww=28,hh=30,color="#58cfff";if(o[0]==="b"){ww=Math.max(18,o[2]*scale);hh=Math.max(14,o[3]*.4);y=gy-hh}else if(o[0]==="s"||o[0]==="S"){ww=18;hh=20;y=o[0]==="S"?cy:gy-hh;color="#ff6686"}else{ww=22;hh=22;y=cy+((gy-cy)/2)-11;color=o[0]==="r"?"#b58aff":o[0]==="B"?"#4beaff":o[0]==="U"?"#a9ff55":o[0]==="q"?"#ffb84d":"#5fe7ff"}ectx.fillStyle=color;if(o[0]==="s"||o[0]==="S"){ectx.save();ectx.shadowColor="#ff4bd2";ectx.shadowBlur=7;ectx.beginPath();if(o[0]==="S"){ectx.moveTo(x,y);ectx.lineTo(x+ww/2,y+hh);ectx.lineTo(x+ww,y)}else{ectx.moveTo(x,y+hh);ectx.lineTo(x+ww/2,y);ectx.lineTo(x+ww,y+hh)}ectx.closePath();ectx.fill();ectx.shadowBlur=0;ectx.fillStyle="#42dfff";ectx.beginPath();if(o[0]==="S"){ectx.moveTo(x+3,y+2);ectx.lineTo(x+ww/2,y+hh-5);ectx.lineTo(x+ww-3,y+2)}else{ectx.moveTo(x+3,y+hh-2);ectx.lineTo(x+ww/2,y+5);ectx.lineTo(x+ww-3,y+hh-2)}ectx.closePath();ectx.fill();ectx.restore()}else if(["r","B","U","q","t","i","p","w"].includes(o[0])){ectx.lineWidth=3;ectx.beginPath();ectx.ellipse(x+ww/2,y+hh/2,ww/2,hh/2,0,0,Math.PI*2);ectx.strokeStyle=color;ectx.stroke()}else{ectx.fillRect(x,y,ww,hh);ectx.strokeStyle="#e3f1ff";ectx.strokeRect(x+1,y+1,ww-2,hh-2)}if(i===editorSelected){ectx.strokeStyle="#fff";ectx.lineWidth=2;ectx.setLineDash([4,3]);ectx.strokeRect(x-4,y-4,ww+8,hh+8);ectx.setLineDash([])}});document.getElementById("editorStatus").textContent=editorObjects.length+"개 오브젝트 · 선택: "+(editorSelected>=0?editorSelected+1:"없음")}
+function editorPointer(e){const r=editorCanvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*EDITOR_LENGTH,y=e.clientY-r.top,gy=r.height-35;return{x,y,gy}}
+editorCanvas.addEventListener("pointerdown",e=>{const p=editorPointer(e);let idx=-1,best=Infinity;editorObjects.forEach((o,i)=>{const d=Math.abs(o[1]-p.x);if(d<best&&d<EDITOR_LENGTH/Math.max(1,editorCanvas.getBoundingClientRect().width)*30){best=d;idx=i}});if(idx>=0){editorSelected=idx;editorDrag={id:idx,startX:p.x,origX:editorObjects[idx][1]};editorCanvas.setPointerCapture(e.pointerId)}else{editorSnapshot();const xx=Math.max(100,Math.round(p.x/50)*50);let obj;if(editorTool==="b")obj=["b",xx,150,60];else if(editorTool==="s"||editorTool==="S")obj=[editorTool,xx];else if(editorTool==="t")obj=["t",xx,2];else if(editorTool==="i")obj=["i",xx,1];else obj=[editorTool,xx];editorObjects.push(obj);editorSelected=editorObjects.length-1}editorDraw()});
+editorCanvas.addEventListener("pointermove",e=>{if(!editorDrag)return;const p=editorPointer(e);editorObjects[editorDrag.id][1]=Math.max(100,Math.round((editorDrag.origX+p.x-editorDrag.startX)/25)*25);editorDraw()});editorCanvas.addEventListener("pointerup",()=>{if(editorDrag)editorSnapshot();editorDrag=null});
+addEventListener("keydown",e=>{if(editorPanel.style.display!=="block")return;if(e.key==="Delete"&&editorSelected>=0){editorSnapshot();editorObjects.splice(editorSelected,1);editorSelected=-1;editorDraw()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){const old=editorHistory.pop();if(old){editorObjects=JSON.parse(old);editorSelected=-1;editorDraw()}}});
+document.getElementById("editorSave").onclick=()=>{localStorage.setItem("gr_custom_map",JSON.stringify(editorObjects));document.getElementById("editorStatus").textContent="저장 완료! 이 브라우저에 맵을 저장했어요."};
+document.getElementById("editorUndo").onclick=()=>{const old=editorHistory.pop();if(old){editorObjects=JSON.parse(old);editorSelected=-1;editorDraw()}};
+document.getElementById("editorClear").onclick=()=>{editorSnapshot();editorObjects=[];editorSelected=-1;editorDraw()};
+document.getElementById("editorClose").onclick=()=>{editorPanel.style.display="none";lobby.style.display="flex";buildMap();draw()};
+document.getElementById("editorTest").onclick=()=>{localStorage.setItem("gr_custom_map",JSON.stringify(editorObjects));const custom={name:"CUSTOM LEVEL",music:"",length:EDITOR_LENGTH,objects:JSON.parse(JSON.stringify(editorObjects))};const oldCustom=MAPS.findIndex(m=>m.name==="CUSTOM LEVEL");if(oldCustom>=0)MAPS.splice(oldCustom,1);MAPS.push(custom);stage=MAPS.length;buildMap();editorPanel.style.display="none";start()};
+document.getElementById("editorOpen").onclick=editorOpen;addEventListener("resize",()=>{if(editorPanel.style.display==="block")editorResize()});
+
+// Offline map-code sharing. Data format is versioned so a future server can store the same payload.
+const onlinePanel=document.getElementById("onlinePanel");
+const onlineUploadResult=document.getElementById("onlineUploadResult");
+const mapCodeText=document.getElementById("mapCodeText");
+function openOnline(){onlinePanel.style.display="flex";onlineUploadResult.textContent=""}
+function closeOnline(){onlinePanel.style.display="none"}
+document.getElementById("onlineOpen").onclick=openOnline;
+document.getElementById("onlineClose").onclick=closeOnline;
+function encodeMapCode(payload){
+ const bytes=new TextEncoder().encode(JSON.stringify(payload));
+ let binary="";for(let i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);
+ return "GR19-"+btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+}
+function decodeMapCode(code){
+ const cleaned=String(code||"").trim().replace(/\s+/g,"");
+ if(!cleaned.startsWith("GR19-"))throw new Error("맵 코드가 GR19-로 시작하는지 확인해 주세요.");
+ let base64=cleaned.slice(5).replace(/-/g,"+").replace(/_/g,"/");
+ while(base64.length%4)base64+="=";
+ let binary;try{binary=atob(base64)}catch(e){throw new Error("코드 형식이 올바르지 않아요. 전체 코드를 다시 복사해 주세요.")}
+ const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));let data;
+ try{data=JSON.parse(new TextDecoder().decode(bytes))}catch(e){throw new Error("맵 데이터를 읽을 수 없어요. 코드가 잘렸는지 확인해 주세요.")}
+ if(!data||data.format!=="GeometryRunMap"||data.version!==1||!Array.isArray(data.objects))throw new Error("지원하지 않는 맵 코드 형식이에요.");
+ if(data.objects.length<1||data.objects.length>1200)throw new Error("맵에는 1~1200개의 오브젝트가 있어야 해요.");
+ const allowed=new Set(["b","B","U","s","S","r","q","t","i","p","w"]);
+ const objects=data.objects.map(o=>{
+  if(!Array.isArray(o)||!allowed.has(o[0])||o.length<2||!Number.isFinite(Number(o[1])))throw new Error("맵에 지원하지 않는 오브젝트가 있거나 데이터가 잘못됐어요.");
+  const out=o.map((v,i)=>i===0?v:Number(v));
+  if(out.some((v,i)=>i>0&&!Number.isFinite(v)))throw new Error("맵의 숫자 데이터가 올바르지 않아요.");
+  return out;
+ });
+ return {name:String(data.name||"SHARED LEVEL").slice(0,40),length:Math.max(1000,Math.min(30000,Number(data.length)||EDITOR_LENGTH)),objects};
+}
+document.getElementById("makeMapCode").onclick=()=>{
+ try{
+  const objects=JSON.parse(JSON.stringify(editorObjects));
+  if(!objects.length)throw new Error("맵이 비어 있어요. 에디터에서 오브젝트를 먼저 추가해 주세요.");
+  if(objects.length>1200)throw new Error("오브젝트가 너무 많아요. 1200개 이하로 줄여 주세요.");
+  const name=(prompt("맵 이름을 입력해 줘!","MY CUSTOM LEVEL")||"MY CUSTOM LEVEL").trim().slice(0,40)||"MY CUSTOM LEVEL";
+  mapCodeText.value=encodeMapCode({format:"GeometryRunMap",version:1,name,length:EDITOR_LENGTH,objects});
+  onlineUploadResult.textContent="코드를 만들었어요! ‘코드 복사’를 눌러 친구에게 보내세요.";
+ }catch(err){onlineUploadResult.textContent=err.message||"코드를 만드는 중 오류가 발생했어요."}
+};
+async function copyMapCode(){
+ const code=mapCodeText.value.trim();if(!code){onlineUploadResult.textContent="먼저 맵 코드를 만들어 주세요.";return}
+ try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(code)}else{mapCodeText.focus();mapCodeText.select();if(!document.execCommand("copy"))throw new Error("copy failed")};onlineUploadResult.textContent="코드를 복사했어요! 친구에게 붙여넣어 보내면 돼요."}
+ catch(e){mapCodeText.focus();mapCodeText.select();onlineUploadResult.textContent="자동 복사가 안 됐어요. 선택된 코드를 Ctrl+C로 복사해 주세요."}
+}
+document.getElementById("copyMapCode").onclick=copyMapCode;
+function importMapCode(playAfter){
+ try{
+  const data=decodeMapCode(mapCodeText.value);
+  editorSnapshot();editorObjects=JSON.parse(JSON.stringify(data.objects));editorSelected=-1;editorDrag=null;
+  localStorage.setItem("gr_custom_map",JSON.stringify(editorObjects));
+  const custom={name:data.name,music:"",length:data.length,objects:JSON.parse(JSON.stringify(data.objects)),sharedCode:true};
+  const old=MAPS.findIndex(m=>m.sharedCode);if(old>=0)MAPS.splice(old,1);MAPS.push(custom);
+  onlineUploadResult.textContent="맵 불러오기 완료! 공식 스테이지는 그대로 보존됐어요.";
+  if(playAfter){stage=MAPS.length;buildMap();closeOnline();start()}
+  else{closeOnline();editorOpen();editorDraw();document.getElementById("editorStatus").textContent="공유 맵 불러오기 완료 · "+editorObjects.length+"개 오브젝트"}
+ }catch(err){onlineUploadResult.textContent=err.message||"맵을 불러오지 못했어요."}
+}
+document.getElementById("importMapCode").onclick=()=>importMapCode(false);
+document.getElementById("playMapCode").onclick=()=>importMapCode(true);
+function loop(t){if(!running){draw();return}const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();if(running)requestAnimationFrame(loop)}
+function key(e){return e.code=="Space"||e.code=="ArrowUp"}
+addEventListener("keydown",e=>{if(!key(e))return;e.preventDefault();if(!jumpHeld){jumpHeld=true;jump()}},{capture:true,passive:false});
+addEventListener("keyup",e=>{if(key(e)){e.preventDefault();jumpHeld=false}},{capture:true,passive:false});
+canvas.addEventListener("pointerdown",e=>{e.preventDefault();jumpHeld=true;jump()});addEventListener("pointerup",()=>jumpHeld=false);
+document.getElementById("shopOpen").onclick=openShop;document.getElementById("shopClose").onclick=closeShop;document.getElementById("retry").onclick=()=>{buildMap();start()};document.getElementById("back").onclick=()=>{running=false;music.pause();overlay.style.display="none";hud.style.display="none";musicBtn.style.display="none";lobby.style.display="flex"};
+musicBtn.onclick=()=>{musicOn=!musicOn;musicBtn.textContent=musicOn?"♪ 음악 ON":"♪ 음악 OFF";if(musicOn&&running&&MAPS[stage-1].music)music.play().catch(()=>{});else music.pause()};
+MAPS.forEach((m,i)=>{const b=document.createElement("button");b.textContent=String(i+1).padStart(2,"0");b.onclick=()=>{stage=i+1;buildMap();start()};levelsEl.appendChild(b)});saveProfile();renderShop();
+buildMap();draw();
+</script>
+</body>
+</html>
